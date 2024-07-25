@@ -1,0 +1,22 @@
+<div>
+    <h3  style="text-align: center;">TU CARRITO</h3>
+    <div class="cart-container">
+        {{#each products}}
+        <div class="cart-item" data-product-id="{{this.product._id}}">
+            <img src="{{this.product.thumbnail.[0]}}" alt="{{this.product.title}}" class="cart-item-image">
+            <div class="cart-item-details">
+                <p class="cart-item-title">{{this.product.title}}</p>
+                <p class="cart-item-description">{{this.product.description}}</p>
+            </div>
+            <p class="cart-item-price">Precio unitario: ${{this.product.price}}</p>
+            <p class="cart-item-quantity">Cantidad en carrito: {{this.quantity}}</p> 
+            <button class="cart-item-remove" data-id="{{this.product._id}}">X</button>
+        </div>
+        {{/each}}
+    </div>
+    <div  style="text-align: center;" class="cart-total">
+        <h4>Precio Total del Carrito: ${{total_price}}</h4>
+        <p id="cart-id" style="display:none;" data-cart-id="{{carrito._id}}"></p>
+    </div>
+</div>
+<script src="/cart.logic.js"></script>

@@ -1,0 +1,29 @@
+<div>
+    <h1>PRODUCTOS</h1>
+    <div class="container">
+    {{#each products}}
+        <div class="card">
+            <img src="{{#if this.thumbnail.length}}{{this.thumbnail.[0]}}{{else}}https://static.vecteezy.com/system/resources/previews/005/337/799/original/icon-image-not-found-free-vector.jpg{{/if}}" alt="{{this.name}}">
+            <div class="card-body">
+                <h2 class="card-title">{{this.title}}</h2>
+                <p class="card-price">${{this.price}}</p>
+                <p class="card-stock">Stock: {{this.stock}}</p>
+                <p class="card-text">{{this.description}}</p>
+                <div class="elementos-ocultos">{{this._id}}</div>
+            </div>
+            <button class="boton-agregar-carrito" data-product-id="{{this._id}}">Agregar al carrito</button>
+        </div>
+    {{/each}}
+    </div>
+    <div class="pagination">
+        {{#if prevLink}}
+        <a href="{{prevLink}}">Anterior</a>
+        {{/if}}
+        <p>pagina {{currentPage}} de {{totalPages}}</p>
+        {{#if nextLink}}
+        <a href="{{nextLink}}">Siguiente</a>
+        {{/if}}
+    </div>
+</div>
+<div id="cart-data" data-cart-id="{{cartId}}" class="elementos-ocultos"></div>
+<script src="/productToCart.logic.js"></script>
