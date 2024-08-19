@@ -1,6 +1,7 @@
 import { Router } from "express";
 import passport from "passport";
 import { userModel } from "../models/user.model.js";
+import { userDAO } from "../DAO/user.dao.js";
 import { createHash } from "../utils/hash.functions.js";
 import { createToken} from "../utils/jwt.functions.js";
 
@@ -18,7 +19,7 @@ router.post("/register", async (req, res)=>{
 
     try{
         const hashPassword = createHash(password)
-        const existUser = await userModel.findOne({email})
+        const existUser = await userDAO.traerUsuarioPorEmail(email)
 
         if(existUser){
             return res.status(401).json({
@@ -26,15 +27,7 @@ router.post("/register", async (req, res)=>{
             })
         }
 
-        const newUser = await userModel.create({
-            first_name,
-            last_name,
-            age,
-            role,
-            email,
-            password: hashPassword,
-            cart: null // Esto se actualizara después
-        })
+        const newUser = await userDAO.crearUsuario(first_name, last_name, email, hashPassword, age, role, cartId)
 
         res.status(200).json(newUser)
 
@@ -88,7 +81,7 @@ router.get("/current", passport.authenticate("jwt", {session: false}), (req, res
 
 //logout
 router.get("/logout", (req, res)=>{
-    res.clearCookie("token")
+    res.clearCookie("currentUser")
     res.status(200).json({
       message: "Sesión cerrada",
     })

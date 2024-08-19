@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { userModel } from "../models/user.model.js";
+import { userDAO } from "../DAO/user.dao.js";
 
 const router = Router()
 
 //traer usuarios
 router.get("/", async (req, res)=>{
     try{
-        const users = await userModel.find()
+        const users = await userDAO.traerUsuarios()
         res.status(200).json(users)
 
     }catch{
@@ -18,7 +18,7 @@ router.get("/", async (req, res)=>{
 //traer usuario por id
 router.get("/:id", async (req, res)=>{
     const { id } = req.params
-    const user = await userModel.findById(id)
+    const user = await userDAO.traerUsuarioPorId(id)
 
     if(!user){
         return res.status(401).json({
@@ -41,7 +41,7 @@ router.put('/:id', async (req, res) => {
     const { cart } = req.body
 
     try {
-        const updatedUser = await userModel.findByIdAndUpdate(id, { cart }, { new: true })
+        const updatedUser = await userDAO.actualizarUsuario(id, cart)
         console.log(cart)
         res.status(200).json(updatedUser)
     } catch (error) {

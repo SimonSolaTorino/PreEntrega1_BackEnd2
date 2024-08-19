@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { userModel } from "../models/user.model.js";
+import { userDAO } from "../DAO/user.dao.js";
 import { comparePassword } from "../utils/hash.functions.js";
 import { createToken, verifyToken} from "../utils/jwt.functions.js";
  
@@ -16,7 +16,7 @@ router.post("/login", async (req, res)=>{
     }
 
     try{
-        const user = await userModel.findOne({ email })
+        const user = await userDAO.traerUsuarioPorEmail(email)
         const isPasswordCorrect = comparePassword(password, user.password)
 
         if(!user){
@@ -56,15 +56,13 @@ router.get("/current", async (req, res)=>{
 
     try{
         const user = verifyToken(token)
-        const userInDB = await userModel.findOne({email: user.email})
+        const userInDB = await userDAO.traerUsuarioPorEmail(user.email)
 
         if(!userInDB){
             return res.status(401).json({
                 error: "no hay usuario con ese mail"
             })
         }
-
-
 
         res.status(200).json(userInDB)
 

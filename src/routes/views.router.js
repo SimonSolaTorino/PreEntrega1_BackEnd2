@@ -1,11 +1,10 @@
 import { Router } from "express";
-import { productModel } from "../models/product.model.js";
-import { cartModel } from "../models/cart.model.js";
-import { userModel } from "../models/user.model.js";
 import { totalCarrito } from "../utils/carts.functions.js";
 import { authenticateUser, authorizeUser } from "../middlewares/auth.middleware.js"
 import { verifyToken } from "../utils/jwt.functions.js";
-
+import { cartDAO } from "../DAO/cart.dao.js";
+import { productDAO } from "../DAO/product.dao.js";
+import { userDAO } from "../DAO/user.dao.js";
 
 const router = Router()
 
@@ -14,12 +13,12 @@ router.get('/', authenticateUser, async (req, res)=>{
     try {
         let user = null
         let isAdmin = false
-        const products = await productModel.find().lean().exec()
+        const products = await productDAO.traerProductos().lean().exec()
 
         if (req.cookies.currentUser) {
             const token = req.cookies.currentUser
             const decoded = verifyToken(token)
-            const userInDB = await userModel.findOne({ email: decoded.email })
+            const userInDB = await userDAO.traerUsuarioPorEmail(decoded.email)
             if(userInDB){
                 user = {
                     first_name: userInDB.first_name,
@@ -55,7 +54,7 @@ router.get('/products', authenticateUser, async (req, res)=>{
 
         const filtro = query ? { 'category': query } : {} //o status si es por disponibilidad
         //const products = await product_model.find().lean().exec()
-        const response = await productModel.paginate(filtro, options)
+        const response = await productDAO.traerProductos(filtro, options.page, options.limit, options.sort)
         const { docs , totalPages, prevPage, nextPage, hasNextPage, hasPrevPage } = response
         const products = docs.map(doc => doc.toObject({ virtuals: true })) //sin esto no renderiza los productos...
         let prevLink = `/products?page=${prevPage}&limit=${limit}`
@@ -83,7 +82,7 @@ router.get('/products', authenticateUser, async (req, res)=>{
             nextLink: hasNextPage ? nextLink : null,
             currentPage: page,
             user,
-            isAdim: user.role,
+            isAdmin: user.role,
             cartId: user.cart
         })
 
@@ -97,7 +96,7 @@ router.get('/products', authenticateUser, async (req, res)=>{
 router.get('/cart', authenticateUser, async (req, res)=>{
     const id_carrito = req.params.cid || req.user.cart
     try{
-        const carrito = await cartModel.findById(id_carrito).populate('products.product').lean()
+        const carrito = await cartDAO.traerCarritoPorId(id_carrito).lean()
 
         if(!carrito){
             return res.status(400).json({ msg: `No se encontró carrito con ID ${id_carrito}`})
@@ -131,18 +130,15 @@ router.get('/login', (req, res) => {
 //vista current
 router.get("/current", authenticateUser, async (req, res)=>{
     try{
-        const user = verifyToken(token)
-        const userInDB = await userModel.findOne({email: user.email})
+        const token = req.cookies.currentUser
+        const decoded = verifyToken(token)
+        const userInDB = await userDAO.traerUsuarioPorEmail(decoded.email)
 
-        if(!userInDB){
-            return res.status(401).json({
-                error: "no hay usuario con ese mail"
-            })
+        if (!userInDB) {
+            return res.status(401).json({ error: "No hay usuario con ese email" })
         }
 
-
-
-        res.render({userInDB})
+        res.render('current', { user: userInDB })
 
     }catch(error){
         console.log("Error en session.router en la ruta GET '/current'.")

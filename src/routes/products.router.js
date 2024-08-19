@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { productModel } from "../models/product.model.js";
+import { productDAO } from "../DAO/product.dao.js";
 import { validarCampos } from "../utils/products.functions.js";
+import { authenticateUser, authorizeUser } from "../middlewares/auth.middleware.js";
 
 const router = Router()
 
-//traer productos
+//traer productos PUBLICA
 router.get('/', async (req, res)=>{
     const { limit = 10, page = 1, sort, query } = req.query
 
@@ -16,7 +17,7 @@ router.get('/', async (req, res)=>{
             ordenamiento.price = sort === 'asc' ? 1 : sort === 'desc' ? -1 : null  
         }
 
-        const response = await productModel.paginate(filtro, { page, limit, sort: ordenamiento })
+        const response = await productDAO.traerProductos(filtro, page, limit, sort, ordenamiento)
         const nextLink = response.hasNextPage ? `http://localhost:8080/products?page=${response.nextPage}` : null
         const prevLink = response.hasPrevPage ? `http://localhost:8080/products?page=${response.prevPage}` : null
 
@@ -39,12 +40,12 @@ router.get('/', async (req, res)=>{
     }
 })
 
-//traer producto por id
+//traer producto por id PUBLICA
 router.get('/:pid', async (req, res)=>{
     const id_producto = req.params.pid
     
     try{    
-        const producto_buscado = await productModel.findById(id_producto)
+        const producto_buscado = await productDAO.traerProductoPorId(id_producto)
 
         if(!producto_buscado){
             res.status(400).json({msg: `no hay producto con el id ${id_producto}`})
@@ -58,8 +59,8 @@ router.get('/:pid', async (req, res)=>{
     }
 })
 
-//agregar un producto
-router.post('/', async (req, res)=>{
+//agregar un producto PRIVADA
+router.post('/', authenticateUser, authorizeUser, async (req, res)=>{
     const { title, description, code, price, stock, category, thumbnail, status } = req.body
     
     if (!title || !description || !code || !price || !stock || !category) {
@@ -78,7 +79,7 @@ router.post('/', async (req, res)=>{
             thumbnail: thumbnail ? [thumbnail] : []
         }
 
-        const producto_nuevo = await productModel.create(info_producto)
+        const producto_nuevo = await productDAO.agregarProducto( title, description, code, price, stock, category, thumbnail, status)
 
         res.status(201).json(info_producto)
 
@@ -88,8 +89,8 @@ router.post('/', async (req, res)=>{
     }
 })
 
-//modificar un producto
-router.put('/:pid', async (req, res)=>{
+//modificar un producto PRIVADA
+router.put('/:pid', authenticateUser, authorizeUser, async (req, res)=>{
     const id_producto = req.params.pid
     const campos_nuevos = req.body
 
@@ -99,7 +100,7 @@ router.put('/:pid', async (req, res)=>{
     }
 
     try{
-        const producto_modificado = await productModel.findByIdAndUpdate(id_producto, campos_nuevos)
+        const producto_modificado = await productDAO.modificarProducto(id_producto, campos_nuevos)
         res.status(201).json(producto_modificado)
 
     }catch(error){
@@ -108,17 +109,19 @@ router.put('/:pid', async (req, res)=>{
     }
 })
 
-//eliminar un producto
-router.delete('/:pid', async (req, res)=>{
+//eliminar un producto PRIVADA
+router.delete('/:pid', authenticateUser, authorizeUser, async (req, res)=>{
     const id_producto = req.params.pid
     
     try{
-        const producto_eliminado = await productModel.findByIdAndDelete(id_producto)
+        const producto_existe = await productDAO.traerProductoPorId(id_producto)
 
-        if (!producto_eliminado) {
+        if (!producto_existe) {
             return res.status(400).json({ msg: 'Producto no encontrado.' })
 
         }
+
+        const producto_eliminado = await productDAO.eliminarProducto(id_producto)
     
         res.status(200).json({ msg: 'Producto eliminado correctamente.', producto: producto_eliminado })
         
